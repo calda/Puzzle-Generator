@@ -10,7 +10,7 @@ import Foundation
 import AppKit
 
 let fileManager = FileManager.default
-let path = "/Users/cal/Documents/Puzzles"//fileManager.currentDirectoryPath
+let path = fileManager.currentDirectoryPath
 let allFiles = (try? fileManager.contentsOfDirectory(at: URL(string: path)!, includingPropertiesForKeys: nil, options: [])) ?? []
 
 //filter down to just images in current folder
@@ -31,7 +31,7 @@ if imageFiles.count == 0 {
     exit(0)
 }
 
-print("Found \(imageFiles.count) images in the current directory.\n")
+print("Found \(imageFiles.count) image\(imageFiles.count == 1 ? "" : "s") in the current directory.\n")
 
 //user input
 func requestInteger(text: String) -> Int {
@@ -42,8 +42,10 @@ func requestInteger(text: String) -> Int {
         let input = readLine(strippingNewline: true)
         integer = Int(input ?? "")
         
+        if (integer ?? 0) <= 0 { integer = nil }
+        
         if integer == nil {
-            print("Input must be an integer.\n")
+            print("Input must be a positive integer.\n")
         }
     }
     
@@ -56,6 +58,7 @@ let cols = requestInteger(text: "Number of columns?")
 //process the images
 for imageFile in imageFiles {
     if let image = NSImage(contentsOf: imageFile) {
+        
         let puzzlePieces = Puzzle(rows: rows, cols: cols).createImages(from: image)
         
         let fileName = imageFile.pathComponents.last!

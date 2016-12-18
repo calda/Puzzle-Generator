@@ -165,8 +165,14 @@ extension PuzzlePiece {
 
 extension NSImage {
     
+    //self.size is inaccurate for some image representations
+    var actualPixelSize: CGSize {
+        guard let tiffData = self.tiffRepresentation else { return self.size }
+        guard let rep = NSBitmapImageRep(data: tiffData) else { return self.size }
+        return CGSize(width: rep.pixelsWide, height: rep.pixelsHigh)
+    }
+    
     var flipped: NSImage {
-        
         let newImage = NSImage(size: self.size)
         newImage.lockFocus()
         
@@ -184,7 +190,8 @@ extension NSImage {
     
     func croppedToAspectRatio(width: Int, height: Int) -> NSImage {
         let aspectRatio = CGFloat(width) / CGFloat(height)
-        let imageRatio = self.size.width / self.size.height
+        let actualSize = self.actualPixelSize
+        let imageRatio = actualSize.width / actualSize.height
         
         if aspectRatio == imageRatio { return self }
         
@@ -192,10 +199,10 @@ extension NSImage {
         var newHeight: CGFloat
         
         if aspectRatio > imageRatio { //image is too tall -- fix width and crop height
-            newWidth = self.size.width
+            newWidth = actualSize.width
             newHeight = newWidth / aspectRatio
         } else { //image is too tall -- fix height and crop width
-            newHeight = self.size.height
+            newHeight = actualSize.height
             newWidth = newHeight * aspectRatio
         }
         
