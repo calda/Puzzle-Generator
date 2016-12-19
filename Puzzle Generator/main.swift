@@ -10,7 +10,7 @@ import Foundation
 import AppKit
 
 let fileManager = FileManager.default
-let path = "/Users/cal/Documents/Puzzles/"//fileManager.currentDirectoryPath
+let path = fileManager.currentDirectoryPath
 let allFiles = (try? fileManager.contentsOfDirectory(at: URL(string: path)!, includingPropertiesForKeys: nil, options: [])) ?? []
 
 //filter down to just images in current folder
@@ -29,6 +29,17 @@ if imageFiles.count == 0 {
     print("\nNo images found in directory (\(path)).\n")
     print("Puzzle Generator supports PNG and JPG.\n")
     exit(0)
+}
+
+//run JPNG if it exists
+var useJPNG: Bool = false
+
+for file in allFiles {
+    if file.absoluteString.contains("JPNGTool") {
+        useJPNG = true
+        print("Detected JPNGTool.")
+        break
+    }
 }
 
 print("Found \(imageFiles.count) image\(imageFiles.count == 1 ? "" : "s") in the current directory.\n")
@@ -56,7 +67,7 @@ let rows = requestInteger(text: "Number of rows?")
 let cols = requestInteger(text: "Number of columns?")
 
 //delete old puzzles if they exist
-let generatedPuzzlesFolder = path + "/Generated Puzzles/"
+let generatedPuzzlesFolder = path + "/GeneratedPuzzles/"
 
 var isDirectory = ObjCBool(booleanLiteral: true)
 if fileManager.fileExists(atPath: generatedPuzzlesFolder, isDirectory: &isDirectory) {
@@ -67,12 +78,12 @@ if fileManager.fileExists(atPath: generatedPuzzlesFolder, isDirectory: &isDirect
 for imageFile in imageFiles {
     if let image = NSImage(contentsOf: imageFile) {
         
-        let puzzle = Puzzle(rows: rows, cols: cols)
-        let puzzlePieces = puzzle.createImages(from: image)
-        
         let fileName = imageFile.pathComponents.last!
         let imageName = fileName.components(separatedBy: ".").first!
-        print("Generating \(imageName)")
+        print("\nGenerating \(imageName)")
+        
+        let puzzle = Puzzle(rows: rows, cols: cols)
+        let puzzlePieces = puzzle.createImages(from: image)
         
         //create puzzle folder
         let puzzleFolder = generatedPuzzlesFolder + imageName
@@ -91,8 +102,22 @@ for imageFile in imageFiles {
             let pngData = bitmap.representation(using: NSPNGFileType, properties: [:])
             
             if let imageData = pngData {
-                let imagePath = puzzleFolder + "/\(imageName)-row\(row)-col\(col).png"
+                let pieceImageName = "\(imageName)-row\(row)-col\(col)"
+                let imagePath = puzzleFolder + "/\(pieceImageName).png"
                 try imageData.write(to: URL(fileURLWithPath: imagePath))
+                
+                //convert to JPNG if possible
+                if useJPNG {
+                    let task = Process()
+                    task.launchPath = "/usr/bin/env"
+                    task.arguments = ["\(path)/JPNGTool",
+                                      "GeneratedPuzzles/\(imageName)/\(pieceImageName).png"]
+                    task.launch()
+                    task.waitUntilExit()
+                    
+                    //delete the original PNG
+                    try fileManager.removeItem(atPath: imagePath)
+                }
             }
         }
         
