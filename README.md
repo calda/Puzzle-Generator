@@ -2,7 +2,19 @@
 
 Puzzle Generator is a macOS Command Line Utility written in Swift. It detects images (`.png` or `.jpg`) in the current folder and crops them into puzzle pieces.
 
-### Using Puzzle Generator
+### Example Input
+
+<p><img src="images/sample.jpg" align="center" width="300px"></p>
+
+### Output (2x2)
+
+<p><img src="images/sample-row0-col0.png" style="vertical-align:top; margin-right:30px" width="138">
+<img src="images/sample-row0-col1.png" style="vertical-align:top;" width="115px"></p>
+
+<p><img src="images/sample-row1-col0.png" style="vertical-align:bottom; margin-right:30px" width="115px">
+<img src="images/sample-row1-col1.png" style="vertical-align:bottom;" width="138px"></p>
+
+## Using Puzzle Generator
 
 Download the latest executable from [Puzzle-Generator/Releases](https://github.com/calda/Puzzle-Generator/releases). Run it  with `./Puzzle\ Generator`. 
 
@@ -12,7 +24,7 @@ Puzzle Generator supports the [JPNG](https://github.com/nicklockwood/JPNG) libra
 
 #### Example Configuration
 
-<p><img src="folder.png" align="center" width="200px"></p>
+<p><img src="images/folder.png" align="center" width="200px"></p>
 
 ```
 cal: ~ $ cd Documents/Puzzles

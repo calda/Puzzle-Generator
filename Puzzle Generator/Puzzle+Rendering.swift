@@ -15,15 +15,15 @@ extension Puzzle {
     
     func createImages(from image: NSImage) -> [(image: NSImage, piece: PuzzlePiece, row: Int, col: Int)] {
         var images = [(image: NSImage, piece: PuzzlePiece, row: Int, col: Int)]()
-        let croppedAndFlipped = image.croppedToAspectRatio(width: cols, height: rows).flipped
+        let croppedImage = image.croppedToAspectRatio(width: cols, height: rows)
         
-        let pieceWidth = croppedAndFlipped.size.width / CGFloat(self.colCount)
-        let pieceHeight = croppedAndFlipped.size.height / CGFloat(self.rowCount)
+        let pieceWidth = croppedImage.size.width / CGFloat(self.colCount)
+        let pieceHeight = croppedImage.size.height / CGFloat(self.rowCount)
         
         for (row, rowPieces) in pieces.enumerated() {
             for (col, piece) in rowPieces.enumerated() {
-                let originInImage = CGPoint(x: Int(pieceWidth) * col, y: Int(pieceHeight) * row)
-                let pieceImage = piece.cropPiece(at: originInImage, fromFlippedImage: croppedAndFlipped, width: pieceWidth)
+                let originInImage = CGPoint(x: Int(pieceWidth) * col, y: Int(pieceHeight) * (rowCount - row - 1))
+                let pieceImage = piece.cropPiece(at: originInImage, from: croppedImage, width: pieceWidth)
                 images.append(image: pieceImage, piece: piece, row: row, col: col)
             }
         }
@@ -54,23 +54,13 @@ extension PuzzlePiece {
         return size
     }
     
-    func imageOrigin(relativeTo pieceOrigin: CGPoint, forWidth width: CGFloat) -> CGPoint {
-        var imageOrigin = pieceOrigin
-        
-        let nubLength = width * PuzzlePiece.nubHeightRelativeToPieceWidth
-        if self.leftNubDirection == .outside { imageOrigin.x -= nubLength }
-        if self.topNubDirection  == .outside { imageOrigin.y -= nubLength }
-        
-        return imageOrigin
-    }
-    
-    func cropPiece(at imageOrigin: CGPoint, fromFlippedImage sourceImage: NSImage, width: CGFloat) -> NSImage {
+    func cropPiece(at imageOrigin: CGPoint, from sourceImage: NSImage, width: CGFloat) -> NSImage {
         
         let contextSize = self.size(forWidth: width)
         return NSImage.newImage(ofSize: contextSize) { context in
             let nubLength = width * PuzzlePiece.nubHeightRelativeToPieceWidth
             let originOfBezierPath = CGPoint(x: (self.leftNubDirection == .outside ? nubLength : 0),
-                                             y: (self.topNubDirection == .outside ? nubLength : 0))
+                                             y: (self.bottomNubDirection == .outside ? nubLength : 0))
             
             let piecePath = path(origin: originOfBezierPath, width: width)
             context.addPath(piecePath.cgPath)
@@ -103,7 +93,7 @@ extension PuzzlePiece {
         var currentPoint = origin
         var vector = CGVector(dx: width, dy: 0)
         
-        for direction in [topNubDirection, rightNubDirection, bottomNubDirection, leftNubDirection] {
+        for direction in [bottomNubDirection, rightNubDirection, topNubDirection, leftNubDirection] {
             let nextPoint = currentPoint + vector
             
             if let direction = direction {
@@ -188,12 +178,6 @@ extension NSImage {
         let image = NSImage(size: size)
         image.addRepresentation(bitmap)
         return image
-    }
-    
-    var flipped: NSImage {
-        return NSImage.newImage(ofSize: self.size) { context in
-            context.draw(self.cgImage!, in: CGRect(origin: .zero, size: size))
-        }
     }
     
     var cgImage: CGImage? {
