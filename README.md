@@ -8,11 +8,7 @@ Puzzle Generator is a macOS Command Line Utility written in Swift. It detects im
 
 ### Output (2x2)
 
-<p><img src="images/sample-row0-col0.png" style="vertical-align:top; margin-right:30px" width="138">
-<img src="images/sample-row0-col1.png" style="vertical-align:top;" width="115px"></p>
-
-<p><img src="images/sample-row1-col0.png" style="vertical-align:bottom; margin-right:30px" width="115px">
-<img src="images/sample-row1-col1.png" style="vertical-align:bottom;" width="138px"></p>
+<p><img src="images/output%20composite.png" align="center" width="350px"></p>
 
 ## Using Puzzle Generator
 
