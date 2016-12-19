@@ -67,8 +67,8 @@
 			children = (
 				2E3CB9CE1E04CFBC0078906F /* main.swift */,
 				2E3CB9D51E04D0200078906F /* Puzzle.swift */,
-				2E3CB9D61E04D0200078906F /* Puzzle+Rendering.swift */,
 				2E3CB9D71E04D0200078906F /* PuzzlePiece.swift */,
+				2E3CB9D61E04D0200078906F /* Puzzle+Rendering.swift */,
 				2E3CB9D81E04D0200078906F /* PuzzleView.swift */,
 			);
 			path = "Puzzle Generator";

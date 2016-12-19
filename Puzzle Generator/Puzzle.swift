@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import AppKit
 
 struct Puzzle {
     
@@ -43,6 +44,32 @@ struct Puzzle {
         self.pieces = puzzle.map { pieceRow in
             return pieceRow.flatMap{ $0 }
         }
+    }
+    
+    
+    //MARK: - Serialization
+    
+    func dictionaryRepresentation(with image: NSImage) -> [String : Any] {
+        
+        var piecesDictionary = [String : [String : String]]()
+        
+        for pieceRow in self.pieces {
+            for piece in pieceRow {
+                guard let row = piece.row, let col = piece.col else { continue }
+                let name = "row\(row)-col\(col)"
+                piecesDictionary[name] = piece.dictionaryRepresentation
+            }
+        }
+    
+        let imageSize = image.croppedToAspectRatio(width: colCount, height: rowCount).actualPixelSize
+
+        return [
+            "rows" : rowCount,
+            "cols" : colCount,
+            "pieces" : piecesDictionary,
+            "pixelsWide" : imageSize.width,
+            "pixelsTall" : imageSize.height
+        ]
     }
     
 }

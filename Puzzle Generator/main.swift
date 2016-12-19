@@ -10,7 +10,7 @@ import Foundation
 import AppKit
 
 let fileManager = FileManager.default
-let path = fileManager.currentDirectoryPath
+let path = "/Users/cal/Documents/Puzzles/"//fileManager.currentDirectoryPath
 let allFiles = (try? fileManager.contentsOfDirectory(at: URL(string: path)!, includingPropertiesForKeys: nil, options: [])) ?? []
 
 //filter down to just images in current folder
@@ -26,7 +26,7 @@ let imageFiles = allFiles.filter { filePath in
 }
 
 if imageFiles.count == 0 {
-    print("No images found in directory (\(path)).\n")
+    print("\nNo images found in directory (\(path)).\n")
     print("Puzzle Generator supports PNG and JPG.\n")
     exit(0)
 }
@@ -55,27 +55,43 @@ func requestInteger(text: String) -> Int {
 let rows = requestInteger(text: "Number of rows?")
 let cols = requestInteger(text: "Number of columns?")
 
+//delete old puzzles if they exist
+let generatedPuzzlesFolder = path + "/Generated Puzzles/"
+
+var isDirectory = ObjCBool(booleanLiteral: true)
+if fileManager.fileExists(atPath: generatedPuzzlesFolder, isDirectory: &isDirectory) {
+    try fileManager.removeItem(atPath: generatedPuzzlesFolder)
+}
+
 //process the images
 for imageFile in imageFiles {
     if let image = NSImage(contentsOf: imageFile) {
         
-        let puzzlePieces = Puzzle(rows: rows, cols: cols).createImages(from: image)
+        let puzzle = Puzzle(rows: rows, cols: cols)
+        let puzzlePieces = puzzle.createImages(from: image)
         
         let fileName = imageFile.pathComponents.last!
         let imageName = fileName.components(separatedBy: ".").first!
         print("Generating \(imageName)")
         
-        //create new folder
-        let newFolderName = path + "/Generated Puzzles/\(imageName)/"
-        try fileManager.createDirectory(atPath: newFolderName, withIntermediateDirectories: true, attributes: nil)
+        //create puzzle folder
+        let puzzleFolder = generatedPuzzlesFolder + imageName
+        try fileManager.createDirectory(atPath: puzzleFolder, withIntermediateDirectories: true, attributes: nil)
+        
+        //save specification file
+        let spec = puzzle.dictionaryRepresentation(with: image)
+        let json = try JSONSerialization.data(withJSONObject: spec, options: [.prettyPrinted])
+        let specPath = puzzleFolder + "/\(imageName)-spec.json"
+        try json.write(to: URL(fileURLWithPath: specPath)) 
+        
         
         //save images to folder
-        for (image, puzzlePiece, row, col) in puzzlePieces {
+        for (image, _, row, col) in puzzlePieces {
             let bitmap = NSBitmapImageRep(cgImage: image.cgImage!)
             let pngData = bitmap.representation(using: NSPNGFileType, properties: [:])
             
             if let imageData = pngData {
-                let imagePath = newFolderName + "/\(imageName)-row\(row)-col\(col).png"
+                let imagePath = puzzleFolder + "/\(imageName)-row\(row)-col\(col).png"
                 try imageData.write(to: URL(fileURLWithPath: imagePath))
             }
         }

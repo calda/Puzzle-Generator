@@ -15,7 +15,7 @@ extension Puzzle {
     
     func createImages(from image: NSImage) -> [(image: NSImage, piece: PuzzlePiece, row: Int, col: Int)] {
         var images = [(image: NSImage, piece: PuzzlePiece, row: Int, col: Int)]()
-        let croppedAndFlipped = image.croppedToAspectRatio(width: rows, height: cols).flipped
+        let croppedAndFlipped = image.croppedToAspectRatio(width: cols, height: rows).flipped
         
         let pieceWidth = croppedAndFlipped.size.width / CGFloat(self.colCount)
         let pieceHeight = croppedAndFlipped.size.height / CGFloat(self.rowCount)
@@ -67,38 +67,33 @@ extension PuzzlePiece {
     func cropPiece(at imageOrigin: CGPoint, fromFlippedImage sourceImage: NSImage, width: CGFloat) -> NSImage {
         
         let contextSize = self.size(forWidth: width)
-        let image = NSImage(size: NSSize(width: contextSize.width, height: contextSize.height))
-        image.lockFocus()
-        
-        let context = NSGraphicsContext.current()?.cgContext
-        
-        let nubLength = width * PuzzlePiece.nubHeightRelativeToPieceWidth
-        let originOfBezierPath = CGPoint(x: (self.leftNubDirection == .outside ? nubLength : 0),
-                                         y: (self.topNubDirection == .outside ? nubLength : 0))
-        
-        let piecePath = path(origin: originOfBezierPath, width: width)
-        context?.addPath(piecePath.cgPath)
-        context?.clip()
-        
-        let originInImage = imageOrigin - originOfBezierPath.vectorFromOrigin()
-        
-        let imageSize = sourceImage.size
-        let imageRectInContext = CGRect(origin: .zero, size: imageSize)
-        
-        context?.translateBy(x: -originInImage.x, y: -originInImage.y)
-        
-        if let cgImage = sourceImage.cgImage {
-            context?.draw(cgImage, in: imageRectInContext)
+        return NSImage.newImage(ofSize: contextSize) { context in
+            let nubLength = width * PuzzlePiece.nubHeightRelativeToPieceWidth
+            let originOfBezierPath = CGPoint(x: (self.leftNubDirection == .outside ? nubLength : 0),
+                                             y: (self.topNubDirection == .outside ? nubLength : 0))
+            
+            let piecePath = path(origin: originOfBezierPath, width: width)
+            context.addPath(piecePath.cgPath)
+            context.clip()
+            
+            let originInImage = imageOrigin - originOfBezierPath.vectorFromOrigin()
+            
+            let imageSize = sourceImage.size
+            let imageRectInContext = CGRect(origin: .zero, size: imageSize)
+            
+            context.translateBy(x: -originInImage.x, y: -originInImage.y)
+            
+            if let cgImage = sourceImage.cgImage {
+                context.draw(cgImage, in: imageRectInContext)
+            }
+            
+            context.translateBy(x: originInImage.x, y: originInImage.y)
+            
+            context.addPath(piecePath.cgPath)
+            context.setLineWidth(7.0)
+            context.setStrokeColor(NSColor(white: 0.0, alpha: 0.5).cgColor)
+            context.strokePath()
         }
-        
-        context?.translateBy(x: originInImage.x, y: originInImage.y)
-        
-        NSColor(white: 0.0, alpha: 0.5).setStroke()
-        piecePath.lineWidth = 5.0
-        piecePath.stroke()
-        
-        image.unlockFocus()
-        return image
     }
     
     func path(origin: CGPoint, width: CGFloat) -> NSBezierPath {
@@ -172,15 +167,33 @@ extension NSImage {
         return CGSize(width: rep.pixelsWide, height: rep.pixelsHigh)
     }
     
+    //custom drawing because lockFocus() depends on device resolution
+    static func newImage(ofSize size: CGSize, render: (CGContext) -> ()) -> NSImage {
+        let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil,
+                                      pixelsWide: Int(size.width),
+                                      pixelsHigh: Int(size.height),
+                                      bitsPerSample: 8,
+                                      samplesPerPixel: 4,
+                                      hasAlpha: true,
+                                      isPlanar: false,
+                                      colorSpaceName: NSDeviceRGBColorSpace,
+                                      bytesPerRow: 0,
+                                      bitsPerPixel: 0)!
+        
+        NSGraphicsContext.saveGraphicsState()
+        let context = NSGraphicsContext(bitmapImageRep: bitmap)!.cgContext
+        render(context)
+        NSGraphicsContext.restoreGraphicsState()
+        
+        let image = NSImage(size: size)
+        image.addRepresentation(bitmap)
+        return image
+    }
+    
     var flipped: NSImage {
-        let newImage = NSImage(size: self.size)
-        newImage.lockFocus()
-        
-        let context = NSGraphicsContext.current()?.cgContext
-        context?.draw(self.cgImage!, in: CGRect(origin: .zero, size: size))
-        
-        newImage.unlockFocus()
-        return newImage
+        return NSImage.newImage(ofSize: self.size) { context in
+            context.draw(self.cgImage!, in: CGRect(origin: .zero, size: size))
+        }
     }
     
     var cgImage: CGImage? {
@@ -197,26 +210,26 @@ extension NSImage {
         
         var newWidth: CGFloat
         var newHeight: CGFloat
+        var newOrigin: CGPoint
         
         if aspectRatio > imageRatio { //image is too tall -- fix width and crop height
             newWidth = actualSize.width
             newHeight = newWidth / aspectRatio
+            newOrigin = CGPoint(x: 0, y: newHeight - actualSize.height)
         } else { //image is too tall -- fix height and crop width
             newHeight = actualSize.height
             newWidth = newHeight * aspectRatio
+            newOrigin = .zero
         }
         
-        let newSize = NSSize(width: newWidth, height: newHeight)
-        let newImage = NSImage(size: newSize)
+        let newSize = CGSize(width: newWidth, height: newHeight)
         
-        newImage.lockFocus()
-        let context = NSGraphicsContext.current()?.cgContext
+        let cropped = NSImage.newImage(ofSize: newSize) { context in
+            let croppedRect = CGRect(origin: newOrigin, size: actualSize)
+            context.draw(self.cgImage!, in: croppedRect)
+        }
         
-        let croppedRect = CGRect(origin: .zero, size: newSize)
-        context?.draw(self.cgImage!, in: croppedRect)
-        
-        newImage.unlockFocus()
-        return newImage
+        return cropped
     }
     
 }

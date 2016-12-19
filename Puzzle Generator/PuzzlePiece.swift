@@ -27,9 +27,17 @@ struct PuzzlePiece {
             }
         }
         
+        var name: String {
+            switch(self) {
+            case .outside: return "outside"
+            case.inside: return "inside"
+            }
+        }
+        
         static var random: Direction {
             return (arc4random() % 2 == 0 ? .outside : .inside)
         }
+        
     }
     
     
@@ -60,6 +68,18 @@ struct PuzzlePiece {
     
     static var withRandomNubs: PuzzlePiece {
         return PuzzlePiece(topNub: .random, rightNub: .random, bottomNub: .random, leftNub: .random)
+    }
+    
+    
+    //MARK: - Serialization
+    
+    var dictionaryRepresentation: [String : String] {
+        return [
+            "topNub"    : self.topNubDirection?.name ?? "none",
+            "rightNub"  : self.rightNubDirection?.name ?? "none",
+            "bottomNub" : self.bottomNubDirection?.name ?? "none",
+            "leftNub"   : self.leftNubDirection?.name ?? "none"
+        ]
     }
     
 }
